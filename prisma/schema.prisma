@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Department {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Doctor {
+  id        Int      @id @default(autoincrement())
+  name      String
+  specialty String
+  createdAt DateTime @default(now())
+}
+
+model Patient {
+  id        Int        @id @default(autoincrement())
+  name      String
+  email     String?    @unique
+  phone     String?
+  createdAt DateTime   @default(now())
+  LabOrder  LabOrder[]
+}
+
+model Appointment {
+  id        Int      @id @default(autoincrement())
+  patientId Int
+  doctorId  Int
+  date      DateTime
+  status    String   @default("Scheduled")
+  createdAt DateTime @default(now())
+}
+
+model Invoice {
+  id           String   @id
+  patient      String
+  date         DateTime
+  consultation Int      @default(0)
+  laboratory   Int      @default(0)
+  medicine     Int      @default(0)
+  other        Int      @default(0)
+  paid         Int      @default(0)
+  method       String   @default("Cash")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+}
+
+model LabOrder {
+  id                Int       @id @default(autoincrement())
+  patientId         Int
+  testId            Int
+  status            String    @default("Pending")
+  sampleStatus      String    @default("Not Collected")
+  result            String?
+  notes             String?
+  price             Int       @default(0)
+  orderedAt         DateTime  @default(now())
+  sampleCollectedAt DateTime?
+  completedAt       DateTime?
+  Patient           Patient   @relation(fields: [patientId], references: [id])
+  LabTest           LabTest   @relation(fields: [testId], references: [id])
+
+  @@index([patientId])
+  @@index([status])
+  @@index([testId])
+}
+
+model LabTest {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
+  category    String
+  description String?
+  price       Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime
+  LabOrder    LabOrder[]
+}
+
+model Medicine {
+  id                   Int                    @id @default(autoincrement())
+  name                 String                 @unique
+  category             String
+  manufacturer         String?
+  unit                 String                 @default("Tablet")
+  purchasePrice        Int                    @default(0)
+  sellingPrice         Int                    @default(0)
+  stockQuantity        Int                    @default(0)
+  lowStockThreshold    Int                    @default(10)
+  expiryDate           DateTime?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime
+  MedicinePurchaseItem MedicinePurchaseItem[]
+  MedicineSaleItem     MedicineSaleItem[]
+
+  @@index([category])
+  @@index([stockQuantity])
+}
+
+model MedicinePurchase {
+  id                   Int                    @id @default(autoincrement())
+  purchaseNumber       String                 @unique
+  supplierName         String
+  totalAmount          Int                    @default(0)
+  purchasedAt          DateTime               @default(now())
+  createdAt            DateTime               @default(now())
+  MedicinePurchaseItem MedicinePurchaseItem[]
+}
+
+model MedicinePurchaseItem {
+  id               Int              @id @default(autoincrement())
+  purchaseId       Int
+  medicineId       Int
+  quantity         Int
+  unitCost         Int
+  subtotal         Int
+  Medicine         Medicine         @relation(fields: [medicineId], references: [id])
+  MedicinePurchase MedicinePurchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  @@index([medicineId])
+  @@index([purchaseId])
+}
+
+model MedicineSale {
+  id               Int                @id @default(autoincrement())
+  saleNumber       String             @unique
+  customerName     String?
+  totalAmount      Int                @default(0)
+  paidAmount       Int                @default(0)
+  paymentMethod    String             @default("Cash")
+  createdAt        DateTime           @default(now())
+  MedicineSaleItem MedicineSaleItem[]
+}
+
+model MedicineSaleItem {
+  id           Int          @id @default(autoincrement())
+  saleId       Int
+  medicineId   Int
+  quantity     Int
+  unitPrice    Int
+  subtotal     Int
+  Medicine     Medicine     @relation(fields: [medicineId], references: [id])
+  MedicineSale MedicineSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([medicineId])
+  @@index([saleId])
+}
